@@ -261,8 +261,8 @@ MCPToolRegistry class >> metadataForTool: aTool usingPolicy: aToolExposurePolicy
 		  (#group -> (self groupNameForToolClass: aTool class)).
 		  (#exposure
 		   -> (self exposureForTool: aTool usingPolicy: aToolExposurePolicy)).
-		  (#mutability -> (self mutabilityForTool: aTool)).
-		  (#risk -> (self riskForTool: aTool)).
+		  (#mutability -> aTool mcpMutability).
+		  (#risk -> aTool mcpRisk).
 		  (#keywords -> (self keywordsForTool: aTool)).
 		  (#schemaInspectionRequired -> (self
 			    schemaInspectionRequiredForTool: aTool
@@ -272,7 +272,8 @@ MCPToolRegistry class >> metadataForTool: aTool usingPolicy: aToolExposurePolicy
 { #category : 'tools' }
 MCPToolRegistry class >> mutabilityForTool: aTool [
 
-	| executeTools readTools toolName |
+	^aTool mcpMutability 
+	"| executeTools readTools toolName |
 	toolName := aTool name.
 	readTools := #( 'tool_search' 'tool_get' 'repository_search'
 	                'repository_identity_verify'
@@ -292,7 +293,7 @@ MCPToolRegistry class >> mutabilityForTool: aTool [
 	                   'debug_capture' 'debug_test_run' ).
 	(readTools includes: toolName) ifTrue: [ ^ 'read' ].
 	(executeTools includes: toolName) ifTrue: [ ^ 'execute' ].
-	^ 'write'
+	^ 'write'"
 ]
 
 { #category : 'tools' }

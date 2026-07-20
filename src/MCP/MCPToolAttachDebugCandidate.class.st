@@ -9,6 +9,12 @@ Class {
 	#tag : 'Tools'
 }
 
+{ #category : 'as yet unclassified' }
+MCPToolAttachDebugCandidate class >> mcpMutability [
+
+	^ #write
+]
+
 { #category : 'defaults' }
 MCPToolAttachDebugCandidate class >> toolName [
 

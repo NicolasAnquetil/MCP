@@ -9,6 +9,12 @@ Class {
 	#tag : 'Tools'
 }
 
+{ #category : 'as yet unclassified' }
+MCPToolListChangeHistoryFiles class >> mcpMutability [
+
+	^ #read
+]
+
 { #category : 'defaults' }
 MCPToolListChangeHistoryFiles class >> toolName [
 

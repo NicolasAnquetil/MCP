@@ -9,6 +9,12 @@ Class {
 	#tag : 'Tools'
 }
 
+{ #category : 'as yet unclassified' }
+MCPToolEnableDebugBreakpoint class >> mcpMutability [
+
+	^ #write
+]
+
 { #category : 'defaults' }
 MCPToolEnableDebugBreakpoint class >> toolName [
 

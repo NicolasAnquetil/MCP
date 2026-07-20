@@ -15,6 +15,12 @@ MCPToolSearch class >> isAbstract [
 	^ self = MCPToolSearch
 ]
 
+{ #category : 'as yet unclassified' }
+MCPToolSearch class >> mcpMutability [ 
+
+	^#read
+]
+
 { #category : 'private - results' }
 MCPToolSearch >> addScopeLabel: aString to: labels [
 

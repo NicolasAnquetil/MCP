@@ -9,6 +9,13 @@ Class {
 	#tag : 'Tools'
 }
 
+{ #category : 'as yet unclassified' }
+MCPToolListRepositoryChanges class >> mcpMutability [
+	"not really a Tool_Mutation_"
+
+	^ #read
+]
+
 { #category : 'defaults' }
 MCPToolListRepositoryChanges class >> toolName [
 

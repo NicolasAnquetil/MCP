@@ -44,6 +44,13 @@ MCPTool class >> isAbstract [
 	^ self = MCPTool
 ]
 
+{ #category : 'as yet unclassified' }
+MCPTool class >> mcpMutability [
+	"can be #read, #write, #execute
+	 Defaults to the most 'dangerous': #execute"
+	^ #execute
+]
+
 { #category : 'scripts' }
 MCPTool class >> toolGroups [
 
@@ -376,6 +383,12 @@ MCPTool >> integerSchemaPropertyNamed: propertyName description: propertyDescrip
 		   description: propertyDescription)
 		  default: defaultValue;
 		  yourself
+]
+
+{ #category : 'as yet unclassified' }
+MCPTool >> mcpMutability [
+
+	^ self class mcpMutability
 ]
 
 { #category : 'accessing' }

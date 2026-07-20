@@ -15,6 +15,12 @@ MCPToolLoadMetacello class >> isAbstract [
 	^ self = MCPToolLoadMetacello
 ]
 
+{ #category : 'as yet unclassified' }
+MCPToolLoadMetacello class >> mcpMutability [
+
+	^ #write
+]
+
 { #category : 'private - execution' }
 MCPToolLoadMetacello >> commandForRequest: loadRequest [
 

@@ -9,6 +9,12 @@ Class {
 	#tag : 'Tools'
 }
 
+{ #category : 'as yet unclassified' }
+MCPToolRevertChangeHistoryEntries class >> mcpMutability [
+
+	^ #write
+]
+
 { #category : 'defaults' }
 MCPToolRevertChangeHistoryEntries class >> toolName [
 

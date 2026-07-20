@@ -9,6 +9,12 @@ Class {
 	#tag : 'Tools'
 }
 
+{ #category : 'as yet unclassified' }
+MCPToolListDebugSessions class >> mcpMutability [
+
+	^ #read
+]
+
 { #category : 'defaults' }
 MCPToolListDebugSessions class >> toolName [
 

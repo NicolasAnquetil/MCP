@@ -9,6 +9,12 @@ Class {
 	#tag : 'Tools'
 }
 
+{ #category : 'as yet unclassified' }
+MCPToolApplyChangeHistoryEntries class >> mcpMutability [
+
+	^ #write
+]
+
 { #category : 'defaults' }
 MCPToolApplyChangeHistoryEntries class >> toolName [
 

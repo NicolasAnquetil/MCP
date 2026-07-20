@@ -11,6 +11,12 @@ Class {
 	#tag : 'Tools'
 }
 
+{ #category : 'as yet unclassified' }
+MCPToolCaptureScreenshot class >> mcpMutability [ 
+
+	^#read
+]
+
 { #category : 'defaults' }
 MCPToolCaptureScreenshot class >> toolName [
 

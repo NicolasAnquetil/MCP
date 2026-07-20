@@ -12,6 +12,12 @@ Class {
 	#tag : 'Tools'
 }
 
+{ #category : 'as yet unclassified' }
+MCPToolRewriteMethods class >> mcpMutability [
+
+	^ #write
+]
+
 { #category : 'defaults' }
 MCPToolRewriteMethods class >> toolName [
 

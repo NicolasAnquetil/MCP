@@ -17,6 +17,12 @@ MCPToolMutation class >> isAbstract [
 	^ self = MCPToolMutation
 ]
 
+{ #category : 'as yet unclassified' }
+MCPToolMutation class >> mcpMutability [
+
+	^ #write
+]
+
 { #category : 'private - errors' }
 MCPToolMutation >> actionErrorCodePrefixFor: action [
 

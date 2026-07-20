@@ -11,6 +11,12 @@ Class {
 	#tag : 'Tools'
 }
 
+{ #category : 'as yet unclassified' }
+MCPToolDebugVariables class >> mcpMutability [
+
+	^ #read
+]
+
 { #category : 'defaults' }
 MCPToolDebugVariables class >> toolName [
 

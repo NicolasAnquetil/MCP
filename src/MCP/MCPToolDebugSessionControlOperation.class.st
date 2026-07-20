@@ -17,6 +17,12 @@ MCPToolDebugSessionControlOperation class >> isAbstract [
 	^ self = MCPToolDebugSessionControlOperation
 ]
 
+{ #category : 'as yet unclassified' }
+MCPToolDebugSessionControlOperation class >> mcpMutability [
+
+	^ #write
+]
+
 { #category : 'private - actions' }
 MCPToolDebugSessionControlOperation >> actionName [
 

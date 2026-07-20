@@ -11,6 +11,12 @@ Class {
 	#tag : 'Tools'
 }
 
+{ #category : 'as yet unclassified' }
+MCPToolRemoveClasses class >> mcpMutability [
+
+	^ #write
+]
+
 { #category : 'defaults' }
 MCPToolRemoveClasses class >> toolName [
 

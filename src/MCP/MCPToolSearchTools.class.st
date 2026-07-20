@@ -11,6 +11,12 @@ Class {
 	#tag : 'Tools'
 }
 
+{ #category : 'as yet unclassified' }
+MCPToolSearchTools class >> mcpMutability [
+
+	^#read
+]
+
 { #category : 'defaults' }
 MCPToolSearchTools class >> toolName [
 
