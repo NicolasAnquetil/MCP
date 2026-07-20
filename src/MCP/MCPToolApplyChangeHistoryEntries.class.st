@@ -10,7 +10,7 @@ Class {
 }
 
 { #category : 'as yet unclassified' }
-MCPToolApplyChangeHistoryEntries class >> mcpMutability [
+MCPToolApplyChangeHistoryEntries class >> toolMutability [
 
 	^ #write
 ]

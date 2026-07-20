@@ -10,7 +10,7 @@ Class {
 }
 
 { #category : 'as yet unclassified' }
-MCPToolListRepositoryChanges class >> mcpMutability [
+MCPToolListRepositoryChanges class >> toolMutability [
 	"not really a Tool_Mutation_"
 
 	^ #read

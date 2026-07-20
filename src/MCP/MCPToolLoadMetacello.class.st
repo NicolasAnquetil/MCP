@@ -16,7 +16,7 @@ MCPToolLoadMetacello class >> isAbstract [
 ]
 
 { #category : 'as yet unclassified' }
-MCPToolLoadMetacello class >> mcpMutability [
+MCPToolLoadMetacello class >> toolMutability [
 
 	^ #write
 ]

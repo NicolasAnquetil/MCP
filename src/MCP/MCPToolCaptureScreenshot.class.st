@@ -12,7 +12,7 @@ Class {
 }
 
 { #category : 'as yet unclassified' }
-MCPToolCaptureScreenshot class >> mcpMutability [ 
+MCPToolCaptureScreenshot class >> toolMutability [ 
 
 	^#read
 ]

@@ -18,7 +18,7 @@ MCPToolMutation class >> isAbstract [
 ]
 
 { #category : 'as yet unclassified' }
-MCPToolMutation class >> mcpMutability [
+MCPToolMutation class >> toolMutability [
 
 	^ #write
 ]

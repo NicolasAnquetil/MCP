@@ -261,8 +261,8 @@ MCPToolRegistry class >> metadataForTool: aTool usingPolicy: aToolExposurePolicy
 		  (#group -> (self groupNameForToolClass: aTool class)).
 		  (#exposure
 		   -> (self exposureForTool: aTool usingPolicy: aToolExposurePolicy)).
-		  (#mutability -> aTool mcpMutability).
-		  (#risk -> aTool mcpRisk).
+		  (#mutability -> aTool toolMutability).
+		  (#risk -> (self riskForTool: aTool)).
 		  (#keywords -> (self keywordsForTool: aTool)).
 		  (#schemaInspectionRequired -> (self
 			    schemaInspectionRequiredForTool: aTool
@@ -272,28 +272,8 @@ MCPToolRegistry class >> metadataForTool: aTool usingPolicy: aToolExposurePolicy
 { #category : 'tools' }
 MCPToolRegistry class >> mutabilityForTool: aTool [
 
-	^aTool mcpMutability 
-	"| executeTools readTools toolName |
-	toolName := aTool name.
-	readTools := #( 'tool_search' 'tool_get' 'repository_search'
-	                'repository_identity_verify'
-	                'repository_change_list' 'package_search'
-	                'class_search' 'class_get' 'method_metadata_search'
-	                'method_source_search' 'method_equivalent_search'
-	                'method_implementor_search'
-	                'method_sender_search' 'method_class_reference_search'
-	                'method_variable_reference_search'
-	                'method_get' 'history_file_list' 'history_entry_list'
-	                'screenshot_capture' 'debug_session_list'
-	                'debug_session_get' 'debug_candidate_search'
-	                'debug_state_get' 'debug_variable_get'
-	                'debug_breakpoint_list' ).
-	executeTools := #( 'tool_call' 'test_run' 'test_coverage_run'
-	                   'image_evaluate' 'debug_expression_evaluate'
-	                   'debug_capture' 'debug_test_run' ).
-	(readTools includes: toolName) ifTrue: [ ^ 'read' ].
-	(executeTools includes: toolName) ifTrue: [ ^ 'execute' ].
-	^ 'write'"
+	^ aTool toolMutability
+
 ]
 
 { #category : 'tools' }

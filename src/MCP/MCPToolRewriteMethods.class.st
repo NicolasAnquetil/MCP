@@ -13,7 +13,7 @@ Class {
 }
 
 { #category : 'as yet unclassified' }
-MCPToolRewriteMethods class >> mcpMutability [
+MCPToolRewriteMethods class >> toolMutability [
 
 	^ #write
 ]

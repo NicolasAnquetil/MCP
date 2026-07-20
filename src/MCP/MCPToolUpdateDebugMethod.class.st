@@ -12,7 +12,7 @@ Class {
 }
 
 { #category : 'as yet unclassified' }
-MCPToolUpdateDebugMethod class >> mcpMutability [
+MCPToolUpdateDebugMethod class >> toolMutability [
 
 	^ #write
 ]

@@ -18,7 +18,7 @@ MCPToolDebugSessionControlOperation class >> isAbstract [
 ]
 
 { #category : 'as yet unclassified' }
-MCPToolDebugSessionControlOperation class >> mcpMutability [
+MCPToolDebugSessionControlOperation class >> toolMutability [
 
 	^ #write
 ]

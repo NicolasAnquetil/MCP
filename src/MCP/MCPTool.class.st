@@ -44,13 +44,6 @@ MCPTool class >> isAbstract [
 	^ self = MCPTool
 ]
 
-{ #category : 'as yet unclassified' }
-MCPTool class >> mcpMutability [
-	"can be #read, #write, #execute
-	 Defaults to the most 'dangerous': #execute"
-	^ #execute
-]
-
 { #category : 'scripts' }
 MCPTool class >> toolGroups [
 
@@ -74,6 +67,13 @@ MCPTool class >> toolIconSpec [
 MCPTool class >> toolIcons [
 
 	^ MCPStructureIcon iconsForToolClass: self
+]
+
+{ #category : 'querying' }
+MCPTool class >> toolMutability [
+	"can be #read, #write, #execute
+	 Defaults to the most 'dangerous': #execute"
+	^ #execute
 ]
 
 { #category : 'defaults' }
@@ -385,12 +385,6 @@ MCPTool >> integerSchemaPropertyNamed: propertyName description: propertyDescrip
 		  yourself
 ]
 
-{ #category : 'as yet unclassified' }
-MCPTool >> mcpMutability [
-
-	^ self class mcpMutability
-]
-
 { #category : 'accessing' }
 MCPTool >> name [
 
@@ -655,6 +649,12 @@ MCPTool >> toolExposurePolicy: aToolExposurePolicy [
 
 	toolExposurePolicy := aToolExposurePolicy ifNil: [
 		                      MCPToolExposurePolicy default ]
+]
+
+{ #category : 'as yet unclassified' }
+MCPTool >> toolMutability [
+
+	^ self class toolMutability
 ]
 
 { #category : 'validating' }

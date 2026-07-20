@@ -16,7 +16,7 @@ MCPToolSearch class >> isAbstract [
 ]
 
 { #category : 'as yet unclassified' }
-MCPToolSearch class >> mcpMutability [ 
+MCPToolSearch class >> toolMutability [ 
 
 	^#read
 ]

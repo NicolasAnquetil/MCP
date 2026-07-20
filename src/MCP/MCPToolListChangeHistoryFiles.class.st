@@ -10,7 +10,7 @@ Class {
 }
 
 { #category : 'as yet unclassified' }
-MCPToolListChangeHistoryFiles class >> mcpMutability [
+MCPToolListChangeHistoryFiles class >> toolMutability [
 
 	^ #read
 ]

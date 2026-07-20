@@ -10,7 +10,7 @@ Class {
 }
 
 { #category : 'as yet unclassified' }
-MCPToolSearchDebugCandidates class >> mcpMutability [
+MCPToolSearchDebugCandidates class >> toolMutability [
 
 	^ #read
 ]

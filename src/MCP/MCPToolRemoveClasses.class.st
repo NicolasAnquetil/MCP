@@ -12,7 +12,7 @@ Class {
 }
 
 { #category : 'as yet unclassified' }
-MCPToolRemoveClasses class >> mcpMutability [
+MCPToolRemoveClasses class >> toolMutability [
 
 	^ #write
 ]

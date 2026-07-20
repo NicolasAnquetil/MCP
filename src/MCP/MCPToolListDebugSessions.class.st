@@ -10,7 +10,7 @@ Class {
 }
 
 { #category : 'as yet unclassified' }
-MCPToolListDebugSessions class >> mcpMutability [
+MCPToolListDebugSessions class >> toolMutability [
 
 	^ #read
 ]
