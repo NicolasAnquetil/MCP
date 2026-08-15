@@ -8,7 +8,8 @@ Class {
 		'server',
 		'toolsList',
 		'monitoring',
-		'toolRegistry'
+		'toolRegistry',
+		'toolResponseFields'
 	],
 	#category : 'MCP-Server',
 	#package : 'MCP',
@@ -111,7 +112,7 @@ MCP >> executeTool: tool named: toolName withParams: arguments [
 		  toolResult := result asMCPStructureCallToolResult.
 		  self saveImageAfterSuccessfulTool: tool result: toolResult.
 		  self monitoring recordToolCallFinish: monitorRecord result: toolResult error: nil.
-		  toolResult asJRPCJSON ]
+		  toolResult asJRPCJSONForResponseFields: self toolResponseFields ]
 		  on: Exception
 		  do: [ :error |
 				  | errorResult |
@@ -120,7 +121,7 @@ MCP >> executeTool: tool named: toolName withParams: arguments [
 						  error pass ].
 				  errorResult := tool errorResultFor: error.
 				  self monitoring recordToolCallFinish: monitorRecord result: errorResult error: error.
-				  errorResult asJRPCJSON ]
+				  errorResult asJRPCJSONForResponseFields: self toolResponseFields ]
 ]
 
 { #category : 'accessing' }
@@ -136,8 +137,7 @@ MCP >> initialize [
 	self refreshToolsList.
 	server := MCPHTTPServer new.
 	server addHandlersFromPragmasIn: self.
-	self monitoringExportDirectory:
-		MCPMonitoringState defaultExportDirectory
+	self monitoringExportDirectory: MCPMonitoringState defaultExportDirectory
 ]
 
 { #category : 'testing' }
@@ -218,9 +218,7 @@ MCP >> monitoringResourceMetadata [
 
 	| metadata |
 	metadata := self monitoring resourceMetadata copy.
-	metadata
-		at: #'pharo.majorVersion'
-		put: PharoCompatibility currentMajorVersion.
+	metadata at: #'pharo.majorVersion' put: PharoCompatibility currentMajorVersion.
 	metadata at: #'mcp.port' put: self port.
 	^ metadata
 ]
@@ -261,8 +259,7 @@ MCP >> pharoRuntimeMetadata [
 	^ {
 		  (#runtimeVersion -> PharoCompatibility runtimeVersionString).
 		  (#supportedMajorVersions -> self supportedPharoMajorVersions).
-		  (#supportedLauncherVersions -> self supportedPharoLauncherVersions) }
-		  asDictionary
+		  (#supportedLauncherVersions -> self supportedPharoLauncherVersions) } asDictionary
 ]
 
 { #category : 'accessing' }
@@ -282,6 +279,27 @@ MCP >> refreshToolsList [
 
 	toolsList := self toolRegistry staticToolsDictionary.
 	^ toolsList
+]
+
+{ #category : 'configuration' }
+MCP >> registerTool: aTool [
+
+	| registration |
+	registration := self toolRegistry registerTool: aTool.
+	self refreshToolsList.
+	^ registration
+]
+
+{ #category : 'configuration' }
+MCP >> registerToolClass: aToolClass [
+
+	^ self registerTool: (aToolClass newForRegistry: self toolRegistry)
+]
+
+{ #category : 'configuration' }
+MCP >> registerToolClasses: toolClasses [
+
+	^ toolClasses collect: [ :eachToolClass | self registerToolClass: eachToolClass ]
 ]
 
 { #category : 'start' }
@@ -309,7 +327,7 @@ MCP >> rpcCallToolCallWithParams: arguments [
 				  | errorResult |
 				  error mcpIsJRPCError ifTrue: [ error pass ].
 				  errorResult := callTool errorResultFor: error.
-				  errorResult asJRPCJSON ]
+				  errorResult asJRPCJSONForResponseFields: self toolResponseFields ]
 ]
 
 { #category : 'rpc' }
@@ -347,8 +365,7 @@ MCP >> rpcToolCall: name withParams: arguments [
 	toolsList
 		at: name
 		ifPresent: [ :tool |
-				name = MCPToolCallTool toolName ifTrue: [
-					^ self rpcCallToolCallWithParams: arguments ].
+				name = MCPToolCallTool toolName ifTrue: [ ^ self rpcCallToolCallWithParams: arguments ].
 				^ self executeTool: tool named: name withParams: arguments ]
 		ifAbsent: [ JRPCNonExistentHandler signal: name ]
 ]
@@ -365,8 +382,7 @@ MCP >> rpcToolsList [
 MCP >> saveImageAfterSuccessfulTool: aTool result: aResult [
 
 	aResult isError ifTrue: [ ^ self ].
-	(aTool shouldSaveImageAfterSuccessfulExecutionForResult: aResult)
-		ifTrue: [ self deferSaveImageAfterCurrentResponse ]
+	(aTool shouldSaveImageAfterSuccessfulExecutionForResult: aResult) ifTrue: [ self deferSaveImageAfterCurrentResponse ]
 ]
 
 { #category : 'private - saving' }
@@ -374,10 +390,7 @@ MCP >> saveImageSession [
 	"MCP autosave must not run SessionManager shutdown/startup hooks: Zinc stops managed servers during cycle, breaking active Streamable HTTP transports."
 
 	| snapshotOperation |
-	snapshotOperation := SnapshotOperation
-		save: true
-		andQuit: false
-		withSessionManager: SessionManager default.
+	snapshotOperation := SnapshotOperation save: true andQuit: false withSessionManager: SessionManager default.
 	snapshotOperation doSnapshot.
 	^ snapshotOperation isImageStarting
 ]
@@ -391,15 +404,13 @@ MCP >> server [
 { #category : 'infrastructure metadata' }
 MCP >> serverInfrastructureMetadata [
 
-	^ { (#'io.github.evref-bl/pharo' -> self pharoRuntimeMetadata) }
-		  asDictionary
+	^ { (#'io.github.evref-bl/pharo' -> self pharoRuntimeMetadata) } asDictionary
 ]
 
 { #category : 'accessing' }
 MCP >> sortedTools [
 
-	^ self toolsList values asSortedCollection: [ :left :right |
-		  left name <= right name ]
+	^ self toolsList values asSortedCollection: [ :left :right | left name <= right name ]
 ]
 
 { #category : 'start' }
@@ -468,6 +479,22 @@ MCP >> toolRegistry: aToolRegistry [
 	self refreshToolsList
 ]
 
+{ #category : 'configuration' }
+MCP >> toolResponseFields [
+
+	^ toolResponseFields ifNil: [ toolResponseFields := #content ]
+]
+
+{ #category : 'configuration' }
+MCP >> toolResponseFields: aSymbolOrString [
+
+	| normalized |
+	normalized := aSymbolOrString asSymbol.
+	(self validToolResponseFields includes: normalized) ifFalse: [
+		Error signal: 'Unsupported MCP tool response fields: ' , aSymbolOrString asString ].
+	toolResponseFields := normalized
+]
+
 { #category : 'accessing' }
 MCP >> toolsList [
 
@@ -480,6 +507,37 @@ MCP >> toolsList: aToolsList [
 	^ toolsList := aToolsList
 ]
 
+{ #category : 'configuration' }
+MCP >> unregisterToolNamed: aToolName [
+
+	self toolRegistry unregisterToolNamed: aToolName.
+	self refreshToolsList
+]
+
+{ #category : 'configuration' }
+MCP >> useContentAndStructuredContentToolResponses [
+
+	self toolResponseFields: #both
+]
+
+{ #category : 'configuration' }
+MCP >> useContentOnlyToolResponses [
+
+	self toolResponseFields: #content
+]
+
+{ #category : 'configuration' }
+MCP >> useStructuredContentOnlyToolResponses [
+
+	self toolResponseFields: #structuredContent
+]
+
+{ #category : 'configuration' }
+MCP >> validToolResponseFields [
+
+	^ #( content structuredContent both )
+]
+
 { #category : 'private - start' }
 MCP >> waitUntilListeningForMilliseconds: milliseconds [
 
@@ -487,7 +545,7 @@ MCP >> waitUntilListeningForMilliseconds: milliseconds [
 	delay := Delay forMilliseconds: 50.
 	attempts := milliseconds // 50 max: 1.
 	attempts timesRepeat: [
-		self isListening ifTrue: [ ^ true ].
-		delay wait ].
+			self isListening ifTrue: [ ^ true ].
+			delay wait ].
 	^ self isListening
 ]

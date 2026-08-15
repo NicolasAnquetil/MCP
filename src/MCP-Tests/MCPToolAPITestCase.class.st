@@ -19,10 +19,7 @@ MCPToolAPITestCase class >> isAbstract [
 MCPToolAPITestCase >> argumentNamed: anArgumentName in: aDictionary default: defaultValue [
 
 	aDictionary ifNil: [ ^ defaultValue ].
-	^ aDictionary
-		  at: anArgumentName asSymbol
-		  ifAbsent: [
-		  aDictionary at: anArgumentName asString ifAbsent: [ defaultValue ] ]
+	^ aDictionary at: anArgumentName asSymbol ifAbsent: [ aDictionary at: anArgumentName asString ifAbsent: [ defaultValue ] ]
 ]
 
 { #category : 'private - calling' }
@@ -42,10 +39,7 @@ MCPToolAPITestCase >> callDiscoveredToolNamed: aToolName withArguments: someArgu
 { #category : 'private - calling' }
 MCPToolAPITestCase >> callRawToolNamed: aToolName withArguments: someArguments [
 
-	^ self aroundToolCall: [
-			  self mcpWithoutObservabilityExport
-				  rpcToolCall: aToolName
-				  withParams: someArguments ]
+	^ self aroundToolCall: [ self mcpWithoutObservabilityExport rpcToolCall: aToolName withParams: someArguments ]
 ]
 
 { #category : 'private - calling' }
@@ -62,9 +56,7 @@ MCPToolAPITestCase >> dataFrom: aResult [
 
 	| structuredContent |
 	structuredContent := self structuredContentFrom: aResult.
-	self
-		deny: (self resultIndicatesError: aResult)
-		description: (self summaryFrom: aResult).
+	self deny: (self resultIndicatesError: aResult) description: (self summaryFrom: aResult).
 	^ structuredContent at: #data
 ]
 
@@ -77,8 +69,7 @@ MCPToolAPITestCase >> errorFrom: aResult [
 { #category : 'private - compatibility' }
 MCPToolAPITestCase >> expectedRefactoringWarningCauseClassNames [
 
-	^ #( 'RBBreakingChangeChecksFailedWarning'
-	     'RBRefactoringWarning' )
+	^ #( 'RBBreakingChangeChecksFailedWarning' 'RBRefactoringWarning' )
 ]
 
 { #category : 'private - compatibility' }
@@ -90,17 +81,62 @@ MCPToolAPITestCase >> expectedSyntaxErrorNoticeClassName [
 { #category : 'private - compatibility' }
 MCPToolAPITestCase >> expectedUndeclaredVariableNoticeClassNames [
 
-	^ #( 'OCUndeclaredVariableWarning' 'OCUndeclaredVariableNotice'
-	     'OCCompilationError' )
+	^ #( 'OCUndeclaredVariableWarning' 'OCUndeclaredVariableNotice' 'OCCompilationError' )
+]
+
+{ #category : 'private - fixtures' }
+MCPToolAPITestCase >> packageSearchFixtureEntriesLoadedInImage: aBoolean [
+
+	^ MCPToolSearchPackages new queryEntriesForQueryRequest: (self packageSearchFixtureRequestLoadedInImage: aBoolean)
+]
+
+{ #category : 'private - fixtures' }
+MCPToolAPITestCase >> packageSearchFixturePackageNames [
+
+	^ #( 'MCP-Tests-Resources' 'MCP-Tests-RunResources' )
+]
+
+{ #category : 'private - fixtures' }
+MCPToolAPITestCase >> packageSearchFixtureProjectName [
+
+	^ 'MCPPackageSearchFixture'
+]
+
+{ #category : 'private - fixtures' }
+MCPToolAPITestCase >> packageSearchFixtureRegistrationLoadedInImage: aBoolean [
+
+	^ MCPPackageSearchProjectRegistrationFixture
+		  projectName: self packageSearchFixtureProjectName
+		  packageNames: self packageSearchFixturePackageNames
+		  loadedInImage: aBoolean
+]
+
+{ #category : 'private - fixtures' }
+MCPToolAPITestCase >> packageSearchFixtureRequestLoadedInImage: aBoolean [
+
+	^ MCPSearchPackagesRequest new
+		  scopeQuery: (self packageSearchFixtureScopeQueryLoadedInImage: aBoolean);
+		  filterMode: 'substring';
+		  fieldFilters: Dictionary new;
+		  caseSensitive: true;
+		  limit: 100;
+		  offset: 0;
+		  yourself
+]
+
+{ #category : 'private - fixtures' }
+MCPToolAPITestCase >> packageSearchFixtureScopeQueryLoadedInImage: aBoolean [
+
+	^ MCPPackageScopeQueryTestDouble new
+		  projectNames: { self packageSearchFixtureProjectName };
+		  projectRegistrations: { (self packageSearchFixtureRegistrationLoadedInImage: aBoolean) };
+		  yourself
 ]
 
 { #category : 'private - parsing' }
 MCPToolAPITestCase >> parsedRequestForTool: aTool arguments: someArguments [
 
-	^ aTool parsedRequestFromToolRequest:
-		  (self
-			   unvalidatedToolRequestForTool: aTool
-			   arguments: someArguments)
+	^ aTool parsedRequestFromToolRequest: (self unvalidatedToolRequestForTool: aTool arguments: someArguments)
 ]
 
 { #category : 'private - results' }
@@ -108,8 +144,7 @@ MCPToolAPITestCase >> resultIndicatesError: aResult [
 
 	| structuredContent |
 	structuredContent := self structuredContentFrom: aResult.
-	^ (structuredContent at: #isError ifAbsent: [ false ]) or: [
-		  (structuredContent at: #status ifAbsent: [ 'ok' ]) = 'error' ]
+	^ (structuredContent at: #isError ifAbsent: [ false ]) or: [ (structuredContent at: #status ifAbsent: [ 'ok' ]) = 'error' ]
 ]
 
 { #category : 'support' }
@@ -154,7 +189,5 @@ MCPToolAPITestCase >> unvalidatedToolRequestForTool: aTool arguments: someArgume
 { #category : 'private - results' }
 MCPToolAPITestCase >> warningsFrom: aResult [
 
-	^ (self structuredContentFrom: aResult)
-		  at: #warnings
-		  ifAbsent: [ #(  ) ]
+	^ (self structuredContentFrom: aResult) at: #warnings ifAbsent: [ #(  ) ]
 ]

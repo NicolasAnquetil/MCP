@@ -38,9 +38,7 @@ MCPPackageScopeQuery >> packageNames [
 { #category : 'accessing' }
 MCPPackageScopeQuery >> packageNames: somePackageNames [
 
-	packageNames := somePackageNames
-		                ifNil: [ #(  ) ]
-		                ifNotNil: [ somePackageNames asArray ]
+	packageNames := somePackageNames ifNil: [ #(  ) ] ifNotNil: [ somePackageNames asArray ]
 ]
 
 { #category : 'private - querying' }
@@ -51,13 +49,9 @@ MCPPackageScopeQuery >> packageProjectNamesMap [
 	self projectRegistrations do: [ :eachProject |
 			| projectName |
 			projectName := eachProject projectName asString.
-			(self packagesForProjectRegistration: eachProject) do: [
-					:eachPackage |
-					(packageProjects
-						 at: eachPackage name asString
-						 ifAbsentPut: [ OrderedCollection new ]) add: projectName ] ].
-	packageProjects valuesDo: [ :eachProjectNames |
-		eachProjectNames sort ].
+			(self packagesForProjectRegistration: eachProject) do: [ :eachPackage |
+				(packageProjects at: eachPackage name asString ifAbsentPut: [ OrderedCollection new ]) add: projectName ] ].
+	packageProjects valuesDo: [ :eachProjectNames | eachProjectNames sort ].
 	^ packageProjects
 ]
 
@@ -68,10 +62,8 @@ MCPPackageScopeQuery >> packages [
 	self validate.
 	self usesImplicitImageScope ifTrue: [ ^ self allPackages ].
 	packages := IdentitySet new.
-	self packageNames ifNotEmpty: [
-		packages addAll: self packagesForPackageNames ].
-	self projectNames ifNotEmpty: [
-		packages addAll: self packagesForProjectNames ].
+	self packageNames ifNotEmpty: [ packages addAll: self packagesForPackageNames ].
+	self projectNames ifNotEmpty: [ packages addAll: self packagesForProjectNames ].
 	^ self sortedPackagesByName: packages
 ]
 
@@ -80,8 +72,7 @@ MCPPackageScopeQuery >> packagesForPackageNames [
 
 	| packages |
 	packages := IdentitySet new.
-	self packageNames do: [ :eachName |
-		packages add: (self resolvedPackageNamed: eachName) ].
+	self packageNames do: [ :eachName | packages add: (self resolvedPackageNamed: eachName) ].
 	^ self sortedPackagesByName: packages
 ]
 
@@ -101,9 +92,7 @@ MCPPackageScopeQuery >> packagesForProjectRegistration: aProjectRegistration [
 	| packages |
 	packages := OrderedCollection new.
 	aProjectRegistration projectVersion packages do: [ :eachSpec |
-			PackageOrganizer default
-				packageNamed: eachSpec name asSymbol
-				ifPresent: [ :package | packages add: package ] ].
+		PackageOrganizer default packageNamed: eachSpec name asSymbol ifPresent: [ :package | packages add: package ] ].
 	^ packages asArray
 ]
 
@@ -116,18 +105,35 @@ MCPPackageScopeQuery >> projectNames [
 { #category : 'accessing' }
 MCPPackageScopeQuery >> projectNames: someProjectNames [
 
-	projectNames := someProjectNames
-		                ifNil: [ #(  ) ]
-		                ifNotNil: [ someProjectNames asArray ]
+	projectNames := someProjectNames ifNil: [ #(  ) ] ifNotNil: [ someProjectNames asArray ]
+]
+
+{ #category : 'private - testing' }
+MCPPackageScopeQuery >> projectRegistrationLoadedInImage: aProjectRegistration [
+
+	^ [ aProjectRegistration loadedInImage ]
+		  on: Error
+		  do: [ false ]
+]
+
+{ #category : 'private - testing' }
+MCPPackageScopeQuery >> projectRegistrationPackagesArePresent: aProjectRegistration [
+
+	| hasPackages |
+	hasPackages := false.
+	[
+		aProjectRegistration projectVersion packages do: [ :eachSpec |
+				hasPackages := true.
+				(PackageOrganizer default hasPackage: eachSpec name asSymbol) ifFalse: [ ^ false ] ] ]
+		on: Error
+		do: [ ^ false ].
+	^ hasPackages
 ]
 
 { #category : 'private - querying' }
 MCPPackageScopeQuery >> projectRegistrations [
 
-	^ MetacelloProjectRegistration registry registrations select: [ :each |
-			  [ each loadedInImage ]
-				  on: Error
-				  do: [ :error | false ] ]
+	^ MetacelloProjectRegistration registry registrations select: [ :each | self shouldUseProjectRegistration: each ]
 ]
 
 { #category : 'private - querying' }
@@ -135,8 +141,7 @@ MCPPackageScopeQuery >> projectsByName [
 
 	| projectsByName |
 	projectsByName := Dictionary new.
-	self projectRegistrations do: [ :eachProject |
-		projectsByName at: eachProject projectName asString put: eachProject ].
+	self projectRegistrations do: [ :eachProject | projectsByName at: eachProject projectName asString put: eachProject ].
 	^ projectsByName
 ]
 
@@ -153,17 +158,21 @@ MCPPackageScopeQuery >> resolvedProjectsNamed: someProjectNames [
 	projectsByName := self projectsByName.
 	projects := OrderedCollection new.
 	someProjectNames do: [ :eachName |
-			projects add: (projectsByName
-					 at: eachName
-					 ifAbsent: [ MCPCommandError signalMissingProjectNamed: eachName ]) ].
+		projects add: (projectsByName at: eachName ifAbsent: [ MCPCommandError signalMissingProjectNamed: eachName ]) ].
 	^ projects asArray
+]
+
+{ #category : 'private - testing' }
+MCPPackageScopeQuery >> shouldUseProjectRegistration: aProjectRegistration [
+
+	^ (self projectRegistrationLoadedInImage: aProjectRegistration) or: [
+		  self projectRegistrationPackagesArePresent: aProjectRegistration ]
 ]
 
 { #category : 'private - scope' }
 MCPPackageScopeQuery >> sortedPackagesByName: somePackages [
 
-	^ somePackages asArray sort: [ :left :right |
-		  left name <= right name ]
+	^ somePackages asArray sort: [ :left :right | left name <= right name ]
 ]
 
 { #category : 'private - source' }

@@ -21,18 +21,15 @@ MCPToolSearchMethodMetadata class >> toolName [
 MCPToolSearchMethodMetadata >> buildInputSchema [
 
 	| properties |
-	properties := self methodQueryScopeInputProperties
-	              , self metadataFilterInputProperties , {
+	properties := self methodQueryScopeInputProperties , self metadataFilterInputProperties , {
 		              (self
-			               filterModeSchemaPropertyWithDescription:
-			               'How selector and protocol filters are matched.'
+			               filterModeSchemaPropertyWithDescription: 'How selector and protocol filters are matched.'
 			               values: self supportedFilterModes).
-		              (self caseSensitiveSchemaPropertyWithDescription:
-			               'Whether selector and protocol matching is case-sensitive.').
-		              (self includeSourceSchemaPropertyWithDescription:
-			               'Whether to include method source code in each result entry.') }
-	              , (self paginationInputPropertiesWithLimitDescription:
-			               'Maximum number of matching methods to return. Use 0 to return no entries.').
+		              (self caseSensitiveSchemaPropertyWithDescription: 'Whether selector and protocol matching is case-sensitive.').
+		              (self includeSourceSchemaPropertyWithDescription: 'Whether to include method source code in each result entry.') }
+	              ,
+	              (self paginationInputPropertiesWithLimitDescription:
+		               'Maximum number of matching methods to return. Use 0 to return no entries.').
 	^ self queryInputSchemaWithProperties: properties
 ]
 
@@ -66,16 +63,19 @@ MCPToolSearchMethodMetadata >> metadataFilterFieldNames [
 MCPToolSearchMethodMetadata >> metadataFilterInputProperties [
 
 	^ {
-		  (self
-			   schemaPropertyNamed: 'selector'
-			   type: 'string'
-			   description:
-			   'Optional selector text matched against method selectors.').
+		  (self schemaPropertyNamed: 'selector' type: 'string' description: 'Optional selector text matched against method selectors.').
 		  (self
 			   schemaPropertyNamed: 'protocol'
 			   type: 'string'
-			   description:
-			   'Optional protocol/category text matched against method protocols.') }
+			   description: 'Optional protocol/category text matched against method protocols.') }
+]
+
+{ #category : 'private - template' }
+MCPToolSearchMethodMetadata >> queryEntriesForQueryRequest: queryRequest [
+
+	(self usesExactSelectorLookupForQueryRequest: queryRequest) ifTrue: [
+		^ self implementorEntriesForSelector: (queryRequest fieldFilters at: 'selector') queryRequest: queryRequest ].
+	^ super queryEntriesForQueryRequest: queryRequest
 ]
 
 { #category : 'private - template' }
@@ -88,4 +88,13 @@ MCPToolSearchMethodMetadata >> searchRequestFromToolRequest: request [
 MCPToolSearchMethodMetadata >> title [
 
 	^ 'Search Method Metadata'
+]
+
+{ #category : 'testing' }
+MCPToolSearchMethodMetadata >> usesExactSelectorLookupForQueryRequest: queryRequest [
+
+	^ queryRequest filterPattern isNil and: [
+			  queryRequest filterMode = 'exact' and: [
+				  queryRequest caseSensitive and: [
+					  queryRequest fieldFilters size = 1 and: [ queryRequest fieldFilters includesKey: 'selector' ] ] ] ]
 ]

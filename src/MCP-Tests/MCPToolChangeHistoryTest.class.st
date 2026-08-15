@@ -4,6 +4,12 @@ Tests for the image change history management MCP tool.
 Class {
 	#name : 'MCPToolChangeHistoryTest',
 	#superclass : 'MCPToolTestCase',
+	#instVars : [
+		'originalMonitor',
+		'tempMonitor',
+		'memoryDirectory',
+		'originalMonitorWasEnabled'
+	],
 	#category : 'MCP-Tests-Tools',
 	#package : 'MCP-Tests',
 	#tag : 'Tools'
@@ -25,14 +31,9 @@ MCPToolChangeHistoryTest >> callToolWith: someArguments [
 	toolClass := Dictionary new
 		             at: 'listFiles' put: MCPToolListChangeHistoryFiles;
 		             at: 'listEntries' put: MCPToolListChangeHistoryEntries;
-		             at: 'applyEntries'
-		             put: MCPToolApplyChangeHistoryEntries;
-		             at: 'revertEntries'
-		             put: MCPToolRevertChangeHistoryEntries;
-		             at: action
-		             ifAbsent: [
-			             Error signal:
-					             'Unknown change history action: ' , action asString ].
+		             at: 'applyEntries' put: MCPToolApplyChangeHistoryEntries;
+		             at: 'revertEntries' put: MCPToolRevertChangeHistoryEntries;
+		             at: action ifAbsent: [ Error signal: 'Unknown change history action: ' , action asString ].
 	tool := toolClass new.
 	request := tool requestFromToolCallArguments: arguments.
 	result := tool executeWithRequest: request.
@@ -42,15 +43,13 @@ MCPToolChangeHistoryTest >> callToolWith: someArguments [
 { #category : 'private' }
 MCPToolChangeHistoryTest >> defaultHistoryDirectoryPath [
 
-	^ EpMonitor logsDirectory fullName
+	^ EpMonitor current log store writingFileReference parent fullName
 ]
 
 { #category : 'private' }
 MCPToolChangeHistoryTest >> isRecoverableMethodEntry: anEntry forClass: aClass [
 
-	^ (MCPChangeHistoryEntryInfo fromEvent: anEntry content)
-		  isMethodChangeForSelector: #rescuedValue
-		  inBehaviorNamed: aClass name
+	^ (MCPChangeHistoryEntryInfo fromEvent: anEntry content) isMethodChangeForSelector: #rescuedValue inBehaviorNamed: aClass name
 ]
 
 { #category : 'private' }
@@ -59,10 +58,8 @@ MCPToolChangeHistoryTest >> latestRecoverableMethodEntryIndexFor: aClass [
 	| foundIndex |
 	EpMonitor current log refresh.
 	EpMonitor current log entries doWithIndex: [ :entry :index |
-			(self isRecoverableMethodEntry: entry forClass: aClass) ifTrue: [
-				foundIndex := index ] ].
-	foundIndex ifNil: [
-		self fail: 'Expected recoverable method entry in change history.' ].
+		(self isRecoverableMethodEntry: entry forClass: aClass) ifTrue: [ foundIndex := index ] ].
+	foundIndex ifNil: [ self fail: 'Expected recoverable method entry in change history.' ].
 	^ foundIndex
 ]
 
@@ -84,6 +81,32 @@ MCPToolChangeHistoryTest >> recordRecoverableMethodAdditionOn: aClass [
 	^ index
 ]
 
+{ #category : 'running' }
+MCPToolChangeHistoryTest >> setUp [
+
+	super setUp.
+	originalMonitor := EpMonitor current.
+	originalMonitorWasEnabled := originalMonitor isEnabled.
+	originalMonitor disable.
+	memoryDirectory := (FileSystem memory / ('mcp-history-test-' , UUID new asString36)) ensureCreateDirectory.
+	tempMonitor := EpMonitor newWithLog: (EpLog newWithStore: (OmBlockFileStore named: 'log' inDirectory: memoryDirectory)).
+	EpMonitor current: tempMonitor.
+	tempMonitor enable
+]
+
+{ #category : 'running' }
+MCPToolChangeHistoryTest >> tearDown [
+
+	tempMonitor ifNotNil: [ tempMonitor disable ].
+	originalMonitor ifNotNil: [
+			EpMonitor current: originalMonitor.
+			originalMonitorWasEnabled
+				ifTrue: [ originalMonitor enable ]
+				ifFalse: [ originalMonitor disable ] ].
+	memoryDirectory ifNotNil: [ memoryDirectory ensureDeleteAll ].
+	super tearDown
+]
+
 { #category : 'tests' }
 MCPToolChangeHistoryTest >> testApplyEntriesAppliesConfirmedChanges [
 
@@ -101,9 +124,7 @@ MCPToolChangeHistoryTest >> testApplyEntriesAppliesConfirmedChanges [
 			self assert: (data at: #performed).
 			self assert: (data at: #performedCount) equals: 1.
 			self assert: (class includesSelector: #rescuedValue).
-			self
-				assert: (class >> #rescuedValue) sourceCode
-				equals: 'rescuedValue ^ 42' ]
+			self assert: (class >> #rescuedValue) sourceCode equals: 'rescuedValue ^ 42' ]
 ]
 
 { #category : 'tests' }
@@ -134,9 +155,7 @@ MCPToolChangeHistoryTest >> testApplyEntriesRejectsIncompleteRange [
 			          (#startIndex -> 1) } asDictionary.
 	error := self errorFrom: result.
 	self assert: (result at: #isError).
-	self
-		assert: (error at: #errorCode)
-		equals: 'ChangeHistoryInvalidSelection'.
+	self assert: (error at: #errorCode) equals: 'ChangeHistoryInvalidSelection'.
 	self assert: (error at: #startIndex) equals: 1.
 	self assert: (error at: #endIndex) isNil
 ]
@@ -150,9 +169,7 @@ MCPToolChangeHistoryTest >> testApplyEntriesRejectsNonPositiveIndex [
 			          (#indexes -> #( 0 )) } asDictionary.
 	error := self errorFrom: result.
 	self assert: (result at: #isError).
-	self
-		assert: (error at: #errorCode)
-		equals: 'ChangeHistoryInvalidSelection'.
+	self assert: (error at: #errorCode) equals: 'ChangeHistoryInvalidSelection'.
 	self assert: (error at: #argumentName) equals: 'indexes'.
 	self assert: (error at: #actualValue) equals: 0
 ]
@@ -161,13 +178,10 @@ MCPToolChangeHistoryTest >> testApplyEntriesRejectsNonPositiveIndex [
 MCPToolChangeHistoryTest >> testApplyEntriesRequiresSelectionCriteria [
 
 	| error result |
-	result := self callToolWith:
-		          { (#action -> 'applyEntries') } asDictionary.
+	result := self callToolWith: { (#action -> 'applyEntries') } asDictionary.
 	error := self errorFrom: result.
 	self assert: (result at: #isError).
-	self
-		assert: (error at: #errorCode)
-		equals: 'ChangeHistoryInvalidSelection'
+	self assert: (error at: #errorCode) equals: 'ChangeHistoryInvalidSelection'
 ]
 
 { #category : 'tests' }
@@ -194,6 +208,7 @@ MCPToolChangeHistoryTest >> testApplyEntriesWithoutConfirmOnlyPreviews [
 MCPToolChangeHistoryTest >> testListEntriesReportsDirectoryPathAsNotFile [
 
 	| directory error result |
+	self useDiskBackedTemporaryLog.
 	directory := self defaultHistoryDirectoryPath asFileReference.
 	result := self callToolWith: {
 			          (#action -> 'listEntries').
@@ -201,9 +216,7 @@ MCPToolChangeHistoryTest >> testListEntriesReportsDirectoryPathAsNotFile [
 			          (#historyFileName -> directory basename) } asDictionary.
 	error := self errorFrom: result.
 	self assert: (result at: #isError).
-	self
-		assert: (error at: #errorCode)
-		equals: 'ChangeHistoryPathNotFile'.
+	self assert: (error at: #errorCode) equals: 'ChangeHistoryPathNotFile'.
 	self assert: (error at: #historyFileName) equals: directory basename
 ]
 
@@ -211,25 +224,18 @@ MCPToolChangeHistoryTest >> testListEntriesReportsDirectoryPathAsNotFile [
 MCPToolChangeHistoryTest >> testListEntriesReportsUnreadableHistoryFile [
 
 	| error file result |
-	file := FileLocator temp asFileReference
-	        /
-	        ('mcp-unreadable-change-history-' , UUID new asString
-	         , '.ombu').
+	file := FileLocator temp asFileReference / ('mcp-unreadable-change-history-' , UUID new asString , '.ombu').
 	[
-		file writeStreamDo: [ :stream |
-			stream nextPutAll: 'not an ombu history file' ].
+		file writeStreamDo: [ :stream | stream nextPutAll: 'not an ombu history file' ].
 		result := self callToolWith: {
 				          (#action -> 'listEntries').
 				          (#directoryPath -> file parent fullName).
 				          (#historyFileName -> file basename) } asDictionary.
 		error := self errorFrom: result.
 		self assert: (result at: #isError).
-		self
-			assert: (error at: #errorCode)
-			equals: 'ChangeHistoryFileUnreadable'.
+		self assert: (error at: #errorCode) equals: 'ChangeHistoryFileUnreadable'.
 		self assert: (error at: #historyFileName) equals: file basename.
-		self assert: (error includesKey: #causeClass) ] ensure: [
-		file ensureDelete ]
+		self assert: (error includesKey: #causeClass) ] ensure: [ file ensureDelete ]
 ]
 
 { #category : 'tests' }
@@ -261,48 +267,40 @@ MCPToolChangeHistoryTest >> testListEntriesReturnsGranularCodeChangeData [
 MCPToolChangeHistoryTest >> testListEntriesSupportsHistoryFileName [
 
 	| data entries file files filesResult result |
-	filesResult := self callToolWith:
-		 { (#action -> 'listFiles') } asDictionary.
-	data := self dataFrom: filesResult.
-	files := data at: #files.
-	file := files
-		        detect: [ :each |
-			        (each at: #isCurrent ifAbsent: [ false ]) and: [
-				        (each at: #exists ifAbsent: [ true ]) ~= false ] ]
-		        ifNone: [
-			        files
-				        detect: [ :each |
-				        (each at: #exists ifAbsent: [ true ]) ~= false ]
-				        ifNone: [ self skip: 'No existing change history file.' ] ].
-	result := self callToolWith: {
-			  (#action -> 'listEntries').
-			  (#historyFileName -> (file at: #fileName)).
-			  (#limit -> 1) } asDictionary.
-	data := self dataFrom: result.
-	entries := data at: #entries.
-	self assert: (data at: #historyFileName) equals: (file at: #fileName).
-	self assert: entries size <= 1
+	self withTemporaryRecoveryClassDo: [ :class |
+			self recordMethodAdditionOn: class.
+			filesResult := self callToolWith: { (#action -> 'listFiles') } asDictionary.
+			data := self dataFrom: filesResult.
+			files := data at: #files.
+			file := files
+				        detect: [ :each | (each at: #isCurrent ifAbsent: [ false ]) and: [ each at: #exists ifAbsent: [ true ] ] ]
+				        ifNone: [
+				        files
+					        detect: [ :each | each at: #exists ifAbsent: [ true ] ]
+					        ifNone: [ self skip: 'No existing change history file.' ] ].
+			result := self callToolWith: {
+					          (#action -> 'listEntries').
+					          (#historyFileName -> (file at: #fileName)).
+					          (#limit -> 1) } asDictionary.
+			data := self dataFrom: result.
+			entries := data at: #entries.
+			self assert: (data at: #historyFileName) equals: (file at: #fileName).
+			self assert: entries size <= 1 ]
 ]
 
 { #category : 'tests' }
 MCPToolChangeHistoryTest >> testListFilesReportsFilePathAsNotDirectory [
 
 	| data error file filePath result |
-	data := self dataFrom:
-		        (self callToolWith:
-			         { (#action -> 'listFiles') } asDictionary).
-	file := (data at: #files) detect: [ :each |
-		        each at: #isCurrent ifAbsent: [ false ] ].
-	filePath := (self defaultHistoryDirectoryPath asFileReference
-	             / (file at: #fileName)) fullName.
+	data := self dataFrom: (self callToolWith: { (#action -> 'listFiles') } asDictionary).
+	file := (data at: #files) detect: [ :each | each at: #isCurrent ifAbsent: [ false ] ].
+	filePath := (self defaultHistoryDirectoryPath asFileReference / (file at: #fileName)) fullName.
 	result := self callToolWith: {
 			          (#action -> 'listFiles').
 			          (#directoryPath -> filePath) } asDictionary.
 	error := self errorFrom: result.
 	self assert: (result at: #isError).
-	self
-		assert: (error at: #errorCode)
-		equals: 'ChangeHistoryPathNotDirectory'.
+	self assert: (error at: #errorCode) equals: 'ChangeHistoryPathNotDirectory'.
 	self assert: (error at: #directoryPath) equals: filePath
 ]
 
@@ -310,17 +308,13 @@ MCPToolChangeHistoryTest >> testListFilesReportsFilePathAsNotDirectory [
 MCPToolChangeHistoryTest >> testListFilesReportsMissingDirectoryPath [
 
 	| error missingPath result |
-	missingPath := (FileLocator temp asFileReference
-	                / ('mcp-missing-change-history-' , UUID new asString))
-		               fullName.
+	missingPath := (FileLocator temp asFileReference / ('mcp-missing-change-history-' , UUID new asString)) fullName.
 	result := self callToolWith: {
 			          (#action -> 'listFiles').
 			          (#directoryPath -> missingPath) } asDictionary.
 	error := self errorFrom: result.
 	self assert: (result at: #isError).
-	self
-		assert: (error at: #errorCode)
-		equals: 'ChangeHistoryDirectoryNotFound'.
+	self assert: (error at: #errorCode) equals: 'ChangeHistoryDirectoryNotFound'.
 	self assert: (error at: #directoryPath) equals: missingPath
 ]
 
@@ -328,26 +322,22 @@ MCPToolChangeHistoryTest >> testListFilesReportsMissingDirectoryPath [
 MCPToolChangeHistoryTest >> testListFilesReturnsCurrentHistoryFile [
 
 	| allowedFileKeys data files result |
-	result := self callToolWith:
-		          { (#action -> 'listFiles') } asDictionary.
+	result := self callToolWith: { (#action -> 'listFiles') } asDictionary.
 	data := self dataFrom: result.
 	files := data at: #files.
-	allowedFileKeys := #( fileName exists fileSize modificationTime
-	                      isCurrent ) asSet.
+	allowedFileKeys := #( fileName exists fileSize modificationTime isCurrent ) asSet.
 	self deny: (result at: #isError ifAbsent: [ false ]).
 	self assert: files notEmpty.
-	self assert:
-		(files anySatisfy: [ :each |
-			 each at: #isCurrent ifAbsent: [ false ] ]).
+	self assert: (files anySatisfy: [ :each | each at: #isCurrent ifAbsent: [ false ] ]).
 	self assert: (files allSatisfy: [ :each |
-				 (each includesKey: #fileName) and: [
-					 each keys allSatisfy: [ :key | allowedFileKeys includes: key ] ] ])
+			 (each includesKey: #fileName) and: [ each keys allSatisfy: [ :key | allowedFileKeys includes: key ] ] ])
 ]
 
 { #category : 'tests' }
 MCPToolChangeHistoryTest >> testListFilesSupportsDirectoryPath [
 
 	| data directoryPath files result |
+	self useDiskBackedTemporaryLog.
 	directoryPath := self defaultHistoryDirectoryPath.
 	result := self callToolWith: {
 			          (#action -> 'listFiles').
@@ -357,9 +347,7 @@ MCPToolChangeHistoryTest >> testListFilesSupportsDirectoryPath [
 	self deny: (result at: #isError ifAbsent: [ false ]).
 	self deny: (data includesKey: #action).
 	self assert: files notEmpty.
-	self assert:
-		(files anySatisfy: [ :each |
-			 each at: #isCurrent ifAbsent: [ false ] ])
+	self assert: (files anySatisfy: [ :each | each at: #isCurrent ifAbsent: [ false ] ])
 ]
 
 { #category : 'tests' }
@@ -400,30 +388,37 @@ MCPToolChangeHistoryTest >> testSelectionResultRequestsImageSaveOnlyAfterPerform
 			                 (#action -> 'apply').
 			                 (#performed -> false).
 			                 (#performedCount -> 0) } asDictionary.
-	emptyConfirmedResult := tool
-		                        successResultText: 'empty apply'
-		                        data: {
-				                        (#action -> 'apply').
-				                        (#performed -> true).
-				                        (#performedCount -> 0) } asDictionary.
+	emptyConfirmedResult := tool successResultText: 'empty apply' data: {
+			                        (#action -> 'apply').
+			                        (#performed -> true).
+			                        (#performedCount -> 0) } asDictionary.
 	confirmedResult := tool successResultText: 'confirmed apply' data: {
 			                   (#action -> 'apply').
 			                   (#performed -> true).
 			                   (#performedCount -> 1) } asDictionary.
 
-	self deny:
-		(tool shouldSaveImageAfterSuccessfulExecutionForResult:
-			 previewResult).
-	self deny: (tool shouldSaveImageAfterSuccessfulExecutionForResult:
-			 emptyConfirmedResult).
-	self assert: (tool shouldSaveImageAfterSuccessfulExecutionForResult:
-			 confirmedResult)
+	self deny: (tool shouldSaveImageAfterSuccessfulExecutionForResult: previewResult).
+	self deny: (tool shouldSaveImageAfterSuccessfulExecutionForResult: emptyConfirmedResult).
+	self assert: (tool shouldSaveImageAfterSuccessfulExecutionForResult: confirmedResult)
 ]
 
 { #category : 'private - calling' }
 MCPToolChangeHistoryTest >> toolName [
 
 	self shouldNotImplement
+]
+
+{ #category : 'private' }
+MCPToolChangeHistoryTest >> useDiskBackedTemporaryLog [
+	"directoryPath is a plain string in the tool's request schema, and the tool resolves it back to a FileReference via #asFileReference, which always resolves against the disk filesystem. Tests that pass an explicit directoryPath therefore need a real (still isolated, still cleaned up) disk directory rather than the FileSystem memory-backed log used elsewhere in this class."
+
+	tempMonitor disable.
+	memoryDirectory ensureDeleteAll.
+	memoryDirectory := FileReference newTempFilePrefix: 'mcp-history-test-' suffix: ''.
+	memoryDirectory ensureCreateDirectory.
+	tempMonitor := EpMonitor newWithLog: (EpLog newWithStore: (OmBlockFileStore named: 'log' inDirectory: memoryDirectory)).
+	EpMonitor current: tempMonitor.
+	tempMonitor enable
 ]
 
 { #category : 'private' }
